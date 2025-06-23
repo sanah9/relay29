@@ -1,10 +1,27 @@
 package khatru29
 
 import (
+	"context"
+
 	"github.com/fiatjaf/khatru"
 	"github.com/fiatjaf/relay29"
 	"github.com/nbd-wtf/go-nostr"
 )
+
+// relayAdapter wraps *khatru.Relay and adapts its methods to the interface expected by relay29.State.
+type relayAdapter struct {
+	*khatru.Relay
+}
+
+// BroadcastEvent satisfies the relay29.State expected signature (no return value).
+func (r *relayAdapter) BroadcastEvent(evt *nostr.Event) {
+	_ = r.Relay.BroadcastEvent(evt)
+}
+
+// AddEvent simply proxies to the embedded khatru.Relay implementation.
+func (r *relayAdapter) AddEvent(ctx context.Context, evt *nostr.Event) (bool, error) {
+	return r.Relay.AddEvent(ctx, evt)
+}
 
 func Init(opts relay29.Options) (*khatru.Relay, *relay29.State) {
 	pubkey, _ := nostr.GetPublicKey(opts.SecretKey)
@@ -18,7 +35,7 @@ func Init(opts relay29.Options) (*khatru.Relay, *relay29.State) {
 	relay.Info.SupportedNIPs = append(relay.Info.SupportedNIPs, 29)
 
 	// assign khatru relay to relay29.State
-	state.Relay = relay
+	state.Relay = &relayAdapter{Relay: relay}
 
 	// provide GetAuthed function
 	state.GetAuthed = khatru.GetAuthed
