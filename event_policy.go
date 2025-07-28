@@ -33,6 +33,11 @@ func (s *State) RequireHTagForExistingGroup(ctx context.Context, event *nostr.Ev
 }
 
 func (s *State) RestrictWritesBasedOnGroupRules(ctx context.Context, event *nostr.Event) (reject bool, msg string) {
+	// Skip 20285 events (external events that don't have h tag)
+	if event.Kind == 20285 {
+		return false, ""
+	}
+
 	group := s.GetGroupFromEvent(event)
 
 	if event.Kind == nostr.KindSimpleGroupJoinRequest {
