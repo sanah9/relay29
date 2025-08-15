@@ -42,6 +42,9 @@ func (s *State) RestrictWritesBasedOnGroupRules(ctx context.Context, event *nost
 
 	if event.Kind == nostr.KindSimpleGroupJoinRequest {
 		// anyone can apply to enter any group (if this is not desired a policy must be added to filter out this stuff)
+		if group == nil {
+			return true, "group not found"
+		}
 		group.mu.RLock()
 		defer group.mu.RUnlock()
 		if _, isMemberAlready := group.Members[event.PubKey]; isMemberAlready {
@@ -59,6 +62,11 @@ func (s *State) RestrictWritesBasedOnGroupRules(ctx context.Context, event *nost
 		} else {
 			return true, "duplicate: group already exists"
 		}
+	}
+
+	// If group is nil for other event types, reject
+	if group == nil {
+		return true, "group not found"
 	}
 
 	// the relay can write to any group
@@ -100,6 +108,11 @@ func (s *State) RestrictInvalidModerationActions(ctx context.Context, event *nos
 	if event.Kind == nostr.KindSimpleGroupCreateGroup {
 		// see restrictWritesBasedOnGroupRules for a check that a group cannot be created if it already exists
 		return false, ""
+	}
+
+	// If group is nil for other moderation events, reject
+	if group == nil {
+		return true, "group not found"
 	}
 
 	// will check if the moderation event author has sufficient permissions to perform this action
@@ -144,6 +157,10 @@ func (s *State) CheckPreviousTag(ctx context.Context, event *nostr.Event) (rejec
 	}
 
 	group := s.GetGroupFromEvent(event)
+	if group == nil {
+		return true, "group not found"
+	}
+
 	for _, idFirstChars := range (*previous)[1:] {
 		if len(idFirstChars) > 64 {
 			return true, fmt.Sprintf("invalid value '%s' in previous tag", idFirstChars)
@@ -162,7 +179,6 @@ func (s *State) CheckPreviousTag(ctx context.Context, event *nostr.Event) (rejec
 			return true, fmt.Sprintf("previous id '%s' wasn't found in this relay", idFirstChars)
 		}
 	}
-
 	return false, ""
 }
 

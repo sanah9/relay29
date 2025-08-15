@@ -92,12 +92,19 @@ func (s *State) loadGroupsFromDB(ctx context.Context) error {
 }
 
 func (s *State) GetGroupFromEvent(event *nostr.Event) *Group {
-	group, _ := s.Groups.Load(GetGroupIDFromEvent(event))
+	groupID := GetGroupIDFromEvent(event)
+	if groupID == "" {
+		return nil // Return nil if no valid group ID found
+	}
+	group, _ := s.Groups.Load(groupID)
 	return group
 }
 
 func GetGroupIDFromEvent(event *nostr.Event) string {
 	gtag := event.Tags.GetFirst([]string{"h", ""})
+	if gtag == nil || len(*gtag) < 2 {
+		return "" // Return empty string if no valid h tag found
+	}
 	groupId := (*gtag)[1]
 	return groupId
 }
