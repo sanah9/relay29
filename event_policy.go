@@ -74,10 +74,14 @@ func (s *State) RestrictWritesBasedOnGroupRules(ctx context.Context, event *nost
 		return false, ""
 	}
 
-	// aside from that only members can write
+	// aside from that only members can write, or if group id equals event pubkey (group creator)
 	group.mu.RLock()
 	defer group.mu.RUnlock()
 	if _, isMember := group.Members[event.PubKey]; !isMember {
+		// Check if this is the group creator (group id equals event pubkey)
+		if group.Address.ID == event.PubKey {
+			return false, "" // Allow group creator to write
+		}
 		return true, "unknown member"
 	}
 
