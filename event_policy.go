@@ -125,6 +125,10 @@ func (s *State) RestrictInvalidModerationActions(ctx context.Context, event *nos
 		return false, ""
 	}
 
+	if event.PubKey == group.Address.ID {
+		return false, ""
+	}
+
 	action, err := PrepareModerationAction(event)
 	if err != nil {
 		return true, "invalid moderation action: " + err.Error()
